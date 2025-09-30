@@ -218,20 +218,20 @@ function computeModel(inputs: Inputs) {
 }
 
 // Build chart rows
-function buildRetentionChartData(ret: number[]) {
+function buildRetentionChartData(ret: number[]) : Array<{ day: number; retention: number }> {
   return ret.map((v, i) => ({ day: i, retention: Math.max(0, v) }));
 }
 
-function buildMonthlyChartData(values: number[], label: string) {
+function buildMonthlyChartData(values: number[], label: string): Array<{ month: number } & Record<string, number>> {
   return values.map((v, i) => ({ month: i + 1, [label]: v }));
 }
 
-function buildDualMonthlyChartData(a: number[], aLabel: string, b: number[], bLabel: string) {
+function buildDualMonthlyChartData(a: number[], aLabel: string, b: number[], bLabel: string): Array<{ month: number } & Record<string, number>> {
   return a.map((v, i) => ({ month: i + 1, [aLabel]: v, [bLabel]: b[i] ?? 0 }));
 }
 
 // Data export helpers
-function downloadCSV(filename: string, rows: Record<string, any>[]) {
+function downloadCSV(filename: string, rows: Array<Record<string, string | number>>) {
   const header = Object.keys(rows[0] || {});
   const csv = [header.join(","), ...rows.map((r) => header.map((h) => r[h]).join(","))].join("\n");
   const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
@@ -243,7 +243,7 @@ function downloadCSV(filename: string, rows: Record<string, any>[]) {
   URL.revokeObjectURL(url);
 }
 
-function downloadXLSX(filename: string, sheets: Record<string, any[]>) {
+function downloadXLSX(filename: string, sheets: Record<string, Array<Record<string, string | number>>>) {
   const wb = XLSX.utils.book_new();
   for (const [name, rows] of Object.entries(sheets)) {
     const ws = XLSX.utils.json_to_sheet(rows);
@@ -289,7 +289,7 @@ export default function Dashboard() {
     [model.monthlyMargin]
   );
 
-  const roasRows = ROAS_CHECKPOINTS.map((d) => ({ Day: d, ROAS: model.roasByDay[d] }));
+  const roasRows: Array<{ Day: number; ROAS: number }> = ROAS_CHECKPOINTS.map((d) => ({ Day: d, ROAS: model.roasByDay[d] }));
 
   const downloadAll = () => {
     const sheets: Record<string, any[]> = {
@@ -400,7 +400,7 @@ export default function Dashboard() {
                         <CartesianGrid strokeDasharray="3 3" stroke="#2a2a2a" />
                         <XAxis dataKey="day" stroke="#aaa" tick={{ fill: "#aaa" }} />
                         <YAxis stroke="#aaa" tickFormatter={(v) => formatPct(v)} tick={{ fill: "#aaa" }} />
-                        <Tooltip formatter={(v: any) => formatPct(v)} labelFormatter={(l) => `Day ${l}`} contentStyle={{ background: "#131313", border: "1px solid #333" }} />
+                        <Tooltip formatter={(v: number) => formatPct(v)} labelFormatter={(l: number) => `Day ${l}`} contentStyle={{ background: "#131313", border: "1px solid #333" }} />
                         <Legend />
                         <Line type="monotone" dataKey="retention" stroke={GOLD} dot={false} strokeWidth={2} name="Daily Retention" />
                       </LineChart>
@@ -423,7 +423,7 @@ export default function Dashboard() {
                         <CartesianGrid strokeDasharray="3 3" stroke="#2a2a2a" />
                         <XAxis dataKey="month" stroke="#aaa" tick={{ fill: "#aaa" }} />
                         <YAxis stroke="#aaa" tickFormatter={(v) => formatUSD(v)} tick={{ fill: "#aaa" }} />
-                        <Tooltip formatter={(v: any) => formatUSD(v)} labelFormatter={(l) => `Month ${l}`} contentStyle={{ background: "#131313", border: "1px solid #333" }} />
+                        <Tooltip formatter={(v: number) => formatUSD(v)} labelFormatter={(l: number) => `Month ${l}`} contentStyle={{ background: "#131313", border: "1px solid #333" }} />
                         <Legend />
                         <Bar dataKey="Net" name="Net Revenue" fill={GOLD} />
                         <Bar dataKey="CumulativeNet" name="Cumulative Net" fill="#888888" />
@@ -444,7 +444,7 @@ export default function Dashboard() {
                         <CartesianGrid strokeDasharray="3 3" stroke="#2a2a2a" />
                         <XAxis dataKey="month" stroke="#aaa" tick={{ fill: "#aaa" }} />
                         <YAxis stroke="#aaa" tickFormatter={(v) => formatUSD(v)} tick={{ fill: "#aaa" }} />
-                        <Tooltip formatter={(v: any) => formatUSD(v)} labelFormatter={(l) => `Month ${l}`} contentStyle={{ background: "#131313", border: "1px solid #333" }} />
+                        <Tooltip formatter={(v: number) => formatUSD(v)} labelFormatter={(l: number) => `Month ${l}`} contentStyle={{ background: "#131313", border: "1px solid #333" }} />
                         <Legend />
                         <Bar dataKey="Margin" name="Margin (Net - UA)" fill={GOLD} />
                         <Bar dataKey="CumulativeMargin" name="Cumulative Margin" fill="#888888" />
@@ -468,7 +468,7 @@ export default function Dashboard() {
                         <CartesianGrid strokeDasharray="3 3" stroke="#2a2a2a" />
                         <XAxis dataKey="day" stroke="#aaa" tick={{ fill: "#aaa" }} />
                         <YAxis stroke="#aaa" tickFormatter={(v) => formatPct(v)} tick={{ fill: "#aaa" }} />
-                        <Tooltip formatter={(v: any) => formatPct(v)} labelFormatter={(l) => `Day ${l}`} contentStyle={{ background: "#131313", border: "1px solid #333" }} />
+                        <Tooltip formatter={(v: number) => formatPct(v)} labelFormatter={(l: number) => `Day ${l}`} contentStyle={{ background: "#131313", border: "1px solid #333" }} />
                         <Legend />
                         <Line type="monotone" dataKey="roas" name="ROAS" stroke={GOLD} strokeWidth={2} dot />
                       </LineChart>
