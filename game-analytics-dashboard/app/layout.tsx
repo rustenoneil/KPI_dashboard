@@ -18,7 +18,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Product Production Analytics — 3-Year Forecast",
+  title: "Forecast-Model",
   description:
     "Investor-ready dashboard with retention-driven LTV, Revenue, ROAS, and Margin forecasts over a 3-year horizon.",
   icons: { icon: "/favicon.ico" },
