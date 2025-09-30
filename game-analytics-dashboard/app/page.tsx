@@ -415,17 +415,17 @@ export default function Dashboard() {
                       <div key={k}>
                         <Label className="text-neutral-300">{k} Retention (%)</Label>
                         <Input
-                          type="number"
-                          step="0.1"
-                          value={inputs.anchors[k]}
-                          onChange={(e) =>
-                            setInputs((prev) => ({
-                              ...prev,
-                              anchors: { ...prev.anchors, [k]: Number(e.target.value) } as RetentionAnchors,
-                            }))
-                          }
-                          className="bg-neutral-800 border-neutral-700"
-                        />
+  type="number"
+  step="0.1"
+  value={inputs.anchors[k]}
+  onChange={(e) =>
+    setInputs((prev) => ({
+      ...prev,
+      anchors: { ...prev.anchors, [k]: Number(e.target.value) } as RetentionAnchors,
+    }))
+  }
+  className="bg-neutral-800 border-neutral-700"
+/>
                       </div>
                     ))}
                   </div>
