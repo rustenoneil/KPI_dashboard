@@ -10,6 +10,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { Download, Info, LineChart as LineChartIcon, BarChart3 } from "lucide-react";
 
+// ---- tiny helpers to avoid any ----
+type Numeric = number | string;
+function toNumber(v: Numeric): number {
+  const n = typeof v === "string" ? parseFloat(v) : v;
+  return Number.isFinite(n) ? n : 0;
+}
+
 // Charts
 import {
   LineChart,
@@ -38,8 +45,11 @@ import * as XLSX from "xlsx";
 // ------------------------------
 // Helper types
 // ------------------------------
+const RET_KEYS = ["D1", "D7", "D14", "D30", "D90", "D180", "D360"] as const;
+type AnchorKey = typeof RET_KEYS[number];
+
 type RetentionAnchors = {
-  D1: number; // as % or decimal? => We'll accept % (e.g., 40 for 40%) OR decimal (0.4). We normalize below.
+  D1: number; // accept % or decimal, normalized in code
   D7: number;
   D14: number;
   D30: number;
@@ -163,7 +173,7 @@ function computeModel(inputs: Inputs) {
   const roasByDay: Record<number, number> = {};
   for (const d of ROAS_CHECKPOINTS) {
     const spend = inputs.monthlyBudget;
-    roasByDay[d] = spend > 0 ? (cumNet[Math.min(d, cumNet.length - 1)] / spend) : 0;
+    roasByDay[d] = spend > 0 ? cumNet[Math.min(d, cumNet.length - 1)] / spend : 0;
   }
 
   // Aggregate across calendar months for 36 cohorts
@@ -218,15 +228,23 @@ function computeModel(inputs: Inputs) {
 }
 
 // Build chart rows
-function buildRetentionChartData(ret: number[]) : Array<{ day: number; retention: number }> {
+function buildRetentionChartData(ret: number[]): Array<{ day: number; retention: number }> {
   return ret.map((v, i) => ({ day: i, retention: Math.max(0, v) }));
 }
 
-function buildMonthlyChartData(values: number[], label: string): Array<{ month: number } & Record<string, number>> {
+function buildMonthlyChartData(
+  values: number[],
+  label: string
+): Array<{ month: number } & Record<string, number>> {
   return values.map((v, i) => ({ month: i + 1, [label]: v }));
 }
 
-function buildDualMonthlyChartData(a: number[], aLabel: string, b: number[], bLabel: string): Array<{ month: number } & Record<string, number>> {
+function buildDualMonthlyChartData(
+  a: number[],
+  aLabel: string,
+  b: number[],
+  bLabel: string
+): Array<{ month: number } & Record<string, number>> {
   return a.map((v, i) => ({ month: i + 1, [aLabel]: v, [bLabel]: b[i] ?? 0 }));
 }
 
@@ -243,7 +261,10 @@ function downloadCSV(filename: string, rows: Array<Record<string, string | numbe
   URL.revokeObjectURL(url);
 }
 
-function downloadXLSX(filename: string, sheets: Record<string, Array<Record<string, string | number>>>) {
+function downloadXLSX(
+  filename: string,
+  sheets: Record<string, Array<Record<string, string | number>>>
+) {
   const wb = XLSX.utils.book_new();
   for (const [name, rows] of Object.entries(sheets)) {
     const ws = XLSX.utils.json_to_sheet(rows);
@@ -289,10 +310,13 @@ export default function Dashboard() {
     [model.monthlyMargin]
   );
 
-  const roasRows: Array<{ Day: number; ROAS: number }> = ROAS_CHECKPOINTS.map((d) => ({ Day: d, ROAS: model.roasByDay[d] }));
+  const roasRows: Array<{ Day: number; ROAS: number }> = ROAS_CHECKPOINTS.map((d) => ({
+    Day: d,
+    ROAS: model.roasByDay[d],
+  }));
 
   const downloadAll = () => {
-    const sheets: Record<string, any[]> = {
+    const sheets: Record<string, Array<Record<string, string | number>>> = {
       Inputs: [
         { Metric: "Monthly Budget", Value: inputs.monthlyBudget },
         { Metric: "CPI", Value: inputs.cpi },
@@ -301,7 +325,10 @@ export default function Dashboard() {
       ],
       RetentionCurve: retentionData.map((r) => ({ Day: r.day, Retention: r.retention })),
       MonthlyRevenueNet: monthlyRevenueNC.map((r) => ({ Month: r.month, NetRevenue: r.NetRevenue })),
-      MonthlyRevenueNetCumulative: monthlyRevenueC.map((r) => ({ Month: r.month, CumulativeNetRevenue: r.CumulativeNetRevenue })),
+      MonthlyRevenueNetCumulative: monthlyRevenueC.map((r) => ({
+        Month: r.month,
+        CumulativeNetRevenue: r.CumulativeNetRevenue,
+      })),
       MonthlyMargin: monthlyMarginNC.map((r) => ({ Month: r.month, Margin: r.Margin })),
       ROAS: roasRows.map((r) => ({ Day: r.Day, ROAS: r.ROAS })),
     };
@@ -318,7 +345,9 @@ export default function Dashboard() {
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
           <div className="flex items-center gap-3">
             <div className="h-8 w-8 rounded-xl" style={{ background: GOLD }} />
-            <h1 className="text-xl font-semibold tracking-tight">Product Production Analytics — 3-Year Forecast</h1>
+            <h1 className="text-xl font-semibold tracking-tight">
+              Product Production Analytics — 3-Year Forecast
+            </h1>
           </div>
           <div className="flex items-center gap-2">
             <Button onClick={downloadAll} className="border-0" style={{ background: GOLD, color: "#111" }}>
@@ -342,48 +371,87 @@ export default function Dashboard() {
               {/* Inputs Card */}
               <Card className="lg:col-span-1 border-neutral-800 bg-neutral-900/60">
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2"><Info className="h-5 w-5" /> Inputs</CardTitle>
+                  <CardTitle className="flex items-center gap-2">
+                    <Info className="h-5 w-5" /> Inputs
+                  </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div>
                     <Label className="text-neutral-300">Monthly Budget (UA)</Label>
-                    <Input type="number" value={inputs.monthlyBudget}
+                    <Input
+                      type="number"
+                      value={inputs.monthlyBudget}
                       onChange={(e) => setInputs({ ...inputs, monthlyBudget: Number(e.target.value) })}
-                      className="bg-neutral-800 border-neutral-700" />
+                      className="bg-neutral-800 border-neutral-700"
+                    />
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <Label className="text-neutral-300">CPI</Label>
-                      <Input type="number" step="0.01" value={inputs.cpi}
+                      <Input
+                        type="number"
+                        step="0.01"
+                        value={inputs.cpi}
                         onChange={(e) => setInputs({ ...inputs, cpi: Number(e.target.value) })}
-                        className="bg-neutral-800 border-neutral-700" />
+                        className="bg-neutral-800 border-neutral-700"
+                      />
                     </div>
                     <div>
                       <Label className="text-neutral-300">ARPDAU</Label>
-                      <Input type="number" step="0.01" value={inputs.arpdaus}
+                      <Input
+                        type="number"
+                        step="0.01"
+                        value={inputs.arpdaus}
                         onChange={(e) => setInputs({ ...inputs, arpdaus: Number(e.target.value) })}
-                        className="bg-neutral-800 border-neutral-700" />
+                        className="bg-neutral-800 border-neutral-700"
+                      />
                     </div>
                   </div>
 
                   <Separator className="my-2 bg-neutral-800" />
 
                   <div className="grid grid-cols-3 gap-4">
-                    {(["D1","D7","D14","D30","D90","D180","D360"] as const).map((k) => (
+                    {RET_KEYS.map((k: AnchorKey) => (
                       <div key={k}>
                         <Label className="text-neutral-300">{k} Retention (%)</Label>
-                        <Input type="number" step="0.1" value={(inputs.anchors as any)[k]}
-                          onChange={(e) => setInputs({ ...inputs, anchors: { ...inputs.anchors, [k]: Number(e.target.value) } })}
-                          className="bg-neutral-800 border-neutral-700" />
+                        <Input
+                          type="number"
+                          step="0.1"
+                          value={inputs.anchors[k]}
+                          onChange={(e) =>
+                            setInputs((prev) => ({
+                              ...prev,
+                              anchors: { ...prev.anchors, [k]: Number(e.target.value) } as RetentionAnchors,
+                            }))
+                          }
+                          className="bg-neutral-800 border-neutral-700"
+                        />
                       </div>
                     ))}
                   </div>
 
                   <div className="rounded-xl border border-neutral-800 bg-neutral-950 p-3 text-sm">
-                    <div className="font-medium" style={{ color: GOLD }}>Quick facts</div>
-                    <div className="mt-1 text-neutral-300">Installs / month: <span className="font-semibold" style={{ color: GOLD }}>{Math.round(model.installsPerCohort).toLocaleString()}</span></div>
-                    <div className="text-neutral-300">Gross LTV: <span className="font-semibold" style={{ color: GOLD }}>{formatUSD(model.grossLTV)}</span></div>
-                    <div className="text-neutral-300">Net LTV (after 30%): <span className="font-semibold" style={{ color: GOLD }}>{formatUSD(model.netLTV)}</span></div>
+                    <div className="font-medium" style={{ color: GOLD }}>
+                      Quick facts
+                    </div>
+                    <div className="mt-1 text-neutral-300">
+                      Installs / month:{" "}
+                      <span className="font-semibold" style={{ color: GOLD }}>
+                        {Math.round(model.installsPerCohort).toLocaleString()}
+                      </span>
+                    </div>
+                    <div className="text-neutral-300">
+                      Gross LTV:{" "}
+                      <span className="font-semibold" style={{ color: GOLD }}>
+                        {formatUSD(model.grossLTV)}
+                      </span>
+                    </div>
+                    <div className="text-neutral-300">
+                      Net LTV (after 30%):{" "}
+                      <span className="font-semibold" style={{ color: GOLD }}>
+                        {formatUSD(model.netLTV)}
+                      </span>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -391,7 +459,9 @@ export default function Dashboard() {
               {/* Retention Curve */}
               <Card className="lg:col-span-2 border-neutral-800 bg-neutral-900/60">
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2"><LineChartIcon className="h-5 w-5" /> Retention Curve (D0–D1080)</CardTitle>
+                  <CardTitle className="flex items-center gap-2">
+                    <LineChartIcon className="h-5 w-5" /> Retention Curve (D0–D1080)
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="h-72 w-full">
@@ -400,7 +470,11 @@ export default function Dashboard() {
                         <CartesianGrid strokeDasharray="3 3" stroke="#2a2a2a" />
                         <XAxis dataKey="day" stroke="#aaa" tick={{ fill: "#aaa" }} />
                         <YAxis stroke="#aaa" tickFormatter={(v) => formatPct(v)} tick={{ fill: "#aaa" }} />
-                        <Tooltip formatter={(v: number) => formatPct(v)} labelFormatter={(l: number) => `Day ${l}`} contentStyle={{ background: "#131313", border: "1px solid #333" }} />
+                        <Tooltip
+                          formatter={(v: Numeric) => formatPct(toNumber(v))}
+                          labelFormatter={(l: number) => `Day ${l}`}
+                          contentStyle={{ background: "#131313", border: "1px solid #333" }}
+                        />
                         <Legend />
                         <Line type="monotone" dataKey="retention" stroke={GOLD} dot={false} strokeWidth={2} name="Daily Retention" />
                       </LineChart>
@@ -414,16 +488,30 @@ export default function Dashboard() {
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
               <Card className="border-neutral-800 bg-neutral-900/60">
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2"><BarChart3 className="h-5 w-5" /> Revenue (Net) — Monthly</CardTitle>
+                  <CardTitle className="flex items-center gap-2">
+                    <BarChart3 className="h-5 w-5" /> Revenue (Net) — Monthly
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="h-72 w-full">
                     <ResponsiveContainer>
-                      <BarChart data={buildDualMonthlyChartData(model.monthlyRevenueNet, "Net", model.monthlyRevenueNetCum, "CumulativeNet")} margin={{ left: 10, right: 20, top: 10, bottom: 10 }}>
+                      <BarChart
+                        data={buildDualMonthlyChartData(
+                          model.monthlyRevenueNet,
+                          "Net",
+                          model.monthlyRevenueNetCum,
+                          "CumulativeNet"
+                        )}
+                        margin={{ left: 10, right: 20, top: 10, bottom: 10 }}
+                      >
                         <CartesianGrid strokeDasharray="3 3" stroke="#2a2a2a" />
                         <XAxis dataKey="month" stroke="#aaa" tick={{ fill: "#aaa" }} />
                         <YAxis stroke="#aaa" tickFormatter={(v) => formatUSD(v)} tick={{ fill: "#aaa" }} />
-                        <Tooltip formatter={(v: number) => formatUSD(v)} labelFormatter={(l: number) => `Month ${l}`} contentStyle={{ background: "#131313", border: "1px solid #333" }} />
+                        <Tooltip
+                          formatter={(v: Numeric) => formatUSD(toNumber(v))}
+                          labelFormatter={(l: number) => `Month ${l}`}
+                          contentStyle={{ background: "#131313", border: "1px solid #333" }}
+                        />
                         <Legend />
                         <Bar dataKey="Net" name="Net Revenue" fill={GOLD} />
                         <Bar dataKey="CumulativeNet" name="Cumulative Net" fill="#888888" />
@@ -435,16 +523,30 @@ export default function Dashboard() {
 
               <Card className="border-neutral-800 bg-neutral-900/60">
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2"><BarChart3 className="h-5 w-5" /> Margin after UA — Monthly</CardTitle>
+                  <CardTitle className="flex items-center gap-2">
+                    <BarChart3 className="h-5 w-5" /> Margin after UA — Monthly
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="h-72 w-full">
                     <ResponsiveContainer>
-                      <BarChart data={buildDualMonthlyChartData(model.monthlyMargin, "Margin", model.monthlyMarginCum, "CumulativeMargin")} margin={{ left: 10, right: 20, top: 10, bottom: 10 }}>
+                      <BarChart
+                        data={buildDualMonthlyChartData(
+                          model.monthlyMargin,
+                          "Margin",
+                          model.monthlyMarginCum,
+                          "CumulativeMargin"
+                        )}
+                        margin={{ left: 10, right: 20, top: 10, bottom: 10 }}
+                      >
                         <CartesianGrid strokeDasharray="3 3" stroke="#2a2a2a" />
                         <XAxis dataKey="month" stroke="#aaa" tick={{ fill: "#aaa" }} />
                         <YAxis stroke="#aaa" tickFormatter={(v) => formatUSD(v)} tick={{ fill: "#aaa" }} />
-                        <Tooltip formatter={(v: number) => formatUSD(v)} labelFormatter={(l: number) => `Month ${l}`} contentStyle={{ background: "#131313", border: "1px solid #333" }} />
+                        <Tooltip
+                          formatter={(v: Numeric) => formatUSD(toNumber(v))}
+                          labelFormatter={(l: number) => `Month ${l}`}
+                          contentStyle={{ background: "#131313", border: "1px solid #333" }}
+                        />
                         <Legend />
                         <Bar dataKey="Margin" name="Margin (Net - UA)" fill={GOLD} />
                         <Bar dataKey="CumulativeMargin" name="Cumulative Margin" fill="#888888" />
@@ -459,16 +561,25 @@ export default function Dashboard() {
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
               <Card className="border-neutral-800 bg-neutral-900/60">
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2"><LineChartIcon className="h-5 w-5" /> Cohort ROAS over Time</CardTitle>
+                  <CardTitle className="flex items-center gap-2">
+                    <LineChartIcon className="h-5 w-5" /> Cohort ROAS over Time
+                  </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="h-72 w-full">
                     <ResponsiveContainer>
-                      <LineChart data={ROAS_CHECKPOINTS.map((d) => ({ day: d, roas: model.roasByDay[d] }))} margin={{ left: 10, right: 20, top: 10, bottom: 10 }}>
+                      <LineChart
+                        data={ROAS_CHECKPOINTS.map((d) => ({ day: d, roas: model.roasByDay[d] }))}
+                        margin={{ left: 10, right: 20, top: 10, bottom: 10 }}
+                      >
                         <CartesianGrid strokeDasharray="3 3" stroke="#2a2a2a" />
                         <XAxis dataKey="day" stroke="#aaa" tick={{ fill: "#aaa" }} />
                         <YAxis stroke="#aaa" tickFormatter={(v) => formatPct(v)} tick={{ fill: "#aaa" }} />
-                        <Tooltip formatter={(v: number) => formatPct(v)} labelFormatter={(l: number) => `Day ${l}`} contentStyle={{ background: "#131313", border: "1px solid #333" }} />
+                        <Tooltip
+                          formatter={(v: Numeric) => formatPct(toNumber(v))}
+                          labelFormatter={(l: number) => `Day ${l}`}
+                          contentStyle={{ background: "#131313", border: "1px solid #333" }}
+                        />
                         <Legend />
                         <Line type="monotone" dataKey="roas" name="ROAS" stroke={GOLD} strokeWidth={2} dot />
                       </LineChart>
@@ -513,7 +624,9 @@ export default function Dashboard() {
               </CardHeader>
               <CardContent className="space-y-4 text-sm leading-6 text-neutral-300">
                 <div className="rounded-xl border border-neutral-800 bg-neutral-950 p-4">
-                  <div className="font-semibold" style={{ color: GOLD }}>Cohort & Horizon</div>
+                  <div className="font-semibold" style={{ color: GOLD }}>
+                    Cohort & Horizon
+                  </div>
                   <ul className="ml-5 list-disc">
                     <li>Horizon: 36 months (3 years), modeled as 30-day months (1080 days total).</li>
                     <li>New install cohort starts each month with constant UA budget.</li>
@@ -521,7 +634,9 @@ export default function Dashboard() {
                 </div>
                 <div className="rounded-xl border border-neutral-800 bg-neutral-950 p-4">
                   <div className="font-semibold" style={{ color: GOLD }}>Installs</div>
-                  <p>Installs per month (per cohort) = <b>Budget ÷ CPI</b>.</p>
+                  <p>
+                    Installs per month (per cohort) = <b>Budget ÷ CPI</b>.
+                  </p>
                 </div>
                 <div className="rounded-xl border border-neutral-800 bg-neutral-950 p-4">
                   <div className="font-semibold" style={{ color: GOLD }}>Retention Curve</div>
@@ -534,20 +649,30 @@ export default function Dashboard() {
                 <div className="rounded-xl border border-neutral-800 bg-neutral-950 p-4">
                   <div className="font-semibold" style={{ color: GOLD }}>Revenue</div>
                   <ul className="ml-5 list-disc">
-                    <li>Daily Gross Revenue (per cohort day <i>t</i>): <b>Installs × Retention(t) × ARPDAU</b>.</li>
-                    <li>Gross LTV: <b>Σ Daily Retention × ARPDAU</b>.</li>
-                    <li>Net LTV & Revenue: <b>Gross × 0.7</b> (deduct 30% platform fee).</li>
+                    <li>
+                      Daily Gross Revenue (per cohort day <i>t</i>): <b>Installs × Retention(t) × ARPDAU</b>.
+                    </li>
+                    <li>
+                      Gross LTV: <b>Σ Daily Retention × ARPDAU</b>.
+                    </li>
+                    <li>
+                      Net LTV & Revenue: <b>Gross × 0.7</b> (deduct 30% platform fee).
+                    </li>
                     <li>Revenue over time: sum all active cohorts by calendar month.</li>
                   </ul>
                 </div>
                 <div className="rounded-xl border border-neutral-800 bg-neutral-950 p-4">
                   <div className="font-semibold" style={{ color: GOLD }}>Margin after UA</div>
-                  <p>Monthly Margin = <b>Net Revenue − UA Spend</b> (UA spend equals the month’s budget for the cohort starting in that month).</p>
+                  <p>
+                    Monthly Margin = <b>Net Revenue − UA Spend</b> (UA spend equals the month’s budget for the cohort starting in that month).
+                  </p>
                 </div>
                 <div className="rounded-xl border border-neutral-800 bg-neutral-950 p-4">
                   <div className="font-semibold" style={{ color: GOLD }}>ROAS</div>
                   <ul className="ml-5 list-disc">
-                    <li>At checkpoints D7/30/90/180/360/720/1080: <b>(Cohort Net Revenue up to day) ÷ UA Spend</b>.</li>
+                    <li>
+                      At checkpoints D7/30/90/180/360/720/1080: <b>(Cohort Net Revenue up to day) ÷ UA Spend</b>.
+                    </li>
                     <li>Reported as a percentage.</li>
                   </ul>
                 </div>
@@ -569,19 +694,48 @@ export default function Dashboard() {
                 <CardTitle>Download Data</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4 text-sm text-neutral-300">
-                <p className="leading-6">Use the gold button in the header to export <b>all inputs and outputs</b> as a single <b>.xlsx</b> workbook. You can also export individual tables below as <b>.csv</b> for quick reuse in spreadsheets or BI tools.</p>
+                <p className="leading-6">
+                  Use the gold button in the header to export <b>all inputs and outputs</b> as a single <b>.xlsx</b> workbook. You can also
+                  export individual tables below as <b>.csv</b> for quick reuse in spreadsheets or BI tools.
+                </p>
 
                 <div className="flex flex-wrap gap-3">
-                  <Button onClick={() => downloadCSV("retention_curve.csv", retentionData)} className="border-0" style={{ background: GOLD, color: "#111" }}>Retention CSV</Button>
-                  <Button onClick={() => downloadCSV("monthly_revenue_net.csv", monthlyRevenueNC)} className="border-0" style={{ background: GOLD, color: "#111" }}>Monthly Net Revenue CSV</Button>
-                  <Button onClick={() => downloadCSV("monthly_margin.csv", monthlyMarginNC)} className="border-0" style={{ background: GOLD, color: "#111" }}>Monthly Margin CSV</Button>
-                  <Button onClick={() => downloadCSV("roas_checkpoints.csv", roasRows)} className="border-0" style={{ background: GOLD, color: "#111" }}>ROAS CSV</Button>
+                  <Button
+                    onClick={() => downloadCSV("retention_curve.csv", retentionData)}
+                    className="border-0"
+                    style={{ background: GOLD, color: "#111" }}
+                  >
+                    Retention CSV
+                  </Button>
+                  <Button
+                    onClick={() => downloadCSV("monthly_revenue_net.csv", monthlyRevenueNC)}
+                    className="border-0"
+                    style={{ background: GOLD, color: "#111" }}
+                  >
+                    Monthly Net Revenue CSV
+                  </Button>
+                  <Button
+                    onClick={() => downloadCSV("monthly_margin.csv", monthlyMarginNC)}
+                    className="border-0"
+                    style={{ background: GOLD, color: "#111" }}
+                  >
+                    Monthly Margin CSV
+                  </Button>
+                  <Button
+                    onClick={() => downloadCSV("roas_checkpoints.csv", roasRows)}
+                    className="border-0"
+                    style={{ background: GOLD, color: "#111" }}
+                  >
+                    ROAS CSV
+                  </Button>
                 </div>
 
                 <Separator className="my-2 bg-neutral-800" />
 
                 <div className="rounded-xl border border-neutral-800 bg-neutral-950 p-4">
-                  <div className="font-semibold" style={{ color: GOLD }}>Tips</div>
+                  <div className="font-semibold" style={{ color: GOLD }}>
+                    Tips
+                  </div>
                   <ul className="ml-5 list-disc">
                     <li>After export, open in Excel/Sheets and adjust formatting as needed.</li>
                     <li>Retention percentages can be pasted directly; decimals are accepted.</li>
