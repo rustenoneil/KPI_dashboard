@@ -359,11 +359,26 @@ export default function Dashboard() {
 
       <div className="mx-auto max-w-7xl gap-6 px-6 py-6">
         <Tabs defaultValue="dashboard" className="w-full">
-          <TabsList className="grid w-full grid-cols-3 bg-neutral-900">
-            <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
-            <TabsTrigger value="formulas">Formulas & Assumptions</TabsTrigger>
-            <TabsTrigger value="download">Download Data</TabsTrigger>
-          </TabsList>
+          <TabsList className="grid w-full grid-cols-3 rounded-xl bg-white p-1 shadow">
+  <TabsTrigger
+    value="dashboard"
+    className="rounded-lg text-neutral-700 data-[state=active]:bg-neutral-200 data-[state=active]:text-neutral-900"
+  >
+    Dashboard
+  </TabsTrigger>
+  <TabsTrigger
+    value="formulas"
+    className="rounded-lg text-neutral-700 data-[state=active]:bg-neutral-200 data-[state=active]:text-neutral-900"
+  >
+    Formulas & Assumptions
+  </TabsTrigger>
+  <TabsTrigger
+    value="download"
+    className="rounded-lg text-neutral-700 data-[state=active]:bg-neutral-200 data-[state=active]:text-neutral-900"
+  >
+    Download Data
+  </TabsTrigger>
+</TabsList>
 
           {/* DASHBOARD */}
           <TabsContent value="dashboard" className="space-y-6">
@@ -371,7 +386,7 @@ export default function Dashboard() {
               {/* Inputs Card */}
               <Card className="lg:col-span-1 border-neutral-800 bg-neutral-900/60">
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
+                  <CardTitle className="flex items-center gap-2 text-white">
                     <Info className="h-5 w-5" /> Inputs
                   </CardTitle>
                 </CardHeader>
@@ -382,7 +397,7 @@ export default function Dashboard() {
                       type="number"
                       value={inputs.monthlyBudget}
                       onChange={(e) => setInputs({ ...inputs, monthlyBudget: Number(e.target.value) })}
-                      className="bg-neutral-800 border-neutral-700"
+                      className="bg-neutral-800 border-neutral-700" text-white placeholder-neutral-400 focus-visible:ring-0 focus-visible:border-neutral-500"
                     />
                   </div>
                   <div className="grid grid-cols-2 gap-4">
@@ -393,7 +408,7 @@ export default function Dashboard() {
                         step="0.01"
                         value={inputs.cpi}
                         onChange={(e) => setInputs({ ...inputs, cpi: Number(e.target.value) })}
-                        className="bg-neutral-800 border-neutral-700"
+                        className="bg-neutral-800 border-neutral-700" text-white placeholder-neutral-400 focus-visible:ring-0 focus-visible:border-neutral-500"
                       />
                     </div>
                     <div>
@@ -403,7 +418,7 @@ export default function Dashboard() {
                         step="0.01"
                         value={inputs.arpdaus}
                         onChange={(e) => setInputs({ ...inputs, arpdaus: Number(e.target.value) })}
-                        className="bg-neutral-800 border-neutral-700"
+                        className="bg-neutral-800 border-neutral-700" text-white placeholder-neutral-400 focus-visible:ring-0 focus-visible:border-neutral-500"
                       />
                     </div>
                   </div>
@@ -424,7 +439,7 @@ export default function Dashboard() {
       anchors: { ...prev.anchors, [k]: Number(e.target.value) } as RetentionAnchors,
     }))
   }
-  className="bg-neutral-800 border-neutral-700"
+  className="bg-neutral-800 border-neutral-700" text-white placeholder-neutral-400 focus-visible:ring-0 focus-visible:border-neutral-500"
 />
                       </div>
                     ))}
@@ -459,7 +474,7 @@ export default function Dashboard() {
               {/* Retention Curve */}
               <Card className="lg:col-span-2 border-neutral-800 bg-neutral-900/60">
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
+                  <CardTitle className="flex items-center gap-2 text-white">
                     <LineChartIcon className="h-5 w-5" /> Retention Curve (D0–D1080)
                   </CardTitle>
                 </CardHeader>
@@ -488,7 +503,7 @@ export default function Dashboard() {
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
               <Card className="border-neutral-800 bg-neutral-900/60">
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
+                  <CardTitle className="flex items-center gap-2 text-white">
                     <BarChart3 className="h-5 w-5" /> Revenue (Net) — Monthly
                   </CardTitle>
                 </CardHeader>
@@ -523,7 +538,7 @@ export default function Dashboard() {
 
               <Card className="border-neutral-800 bg-neutral-900/60">
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
+                  <CardTitle className="flex items-center gap-2 text-white">
                     <BarChart3 className="h-5 w-5" /> Margin after UA — Monthly
                   </CardTitle>
                 </CardHeader>
@@ -561,7 +576,7 @@ export default function Dashboard() {
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
               <Card className="border-neutral-800 bg-neutral-900/60">
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
+                  <CardTitle className="flex items-center gap-2 text-white">
                     <LineChartIcon className="h-5 w-5" /> Cohort ROAS over Time
                   </CardTitle>
                 </CardHeader>
@@ -573,12 +588,12 @@ export default function Dashboard() {
                         margin={{ left: 10, right: 20, top: 10, bottom: 10 }}
                       >
                         <CartesianGrid strokeDasharray="3 3" stroke="#2a2a2a" />
-                        <XAxis dataKey="day" stroke="#aaa" tick={{ fill: "#aaa" }} />
-                        <YAxis stroke="#aaa" tickFormatter={(v) => formatPct(v)} tick={{ fill: "#aaa" }} />
+                        <XAxis dataKey="day" stroke="#fff" tick={{ fill: "#fff" }} />
+                        <YAxis stroke="#fff" tickFormatter={(v) => formatPct(v)} tick={{ fill: "#fff" }} />
                         <Tooltip
                           formatter={(v: Numeric) => formatPct(toNumber(v))}
                           labelFormatter={(l: number) => `Day ${l}`}
-                          contentStyle={{ background: "#131313", border: "1px solid #333" }}
+                          contentStyle={{ background: "#0f0f0f", border: "1px solid #2f2f2f", color: "fff" }}
                         />
                         <Legend />
                         <Line type="monotone" dataKey="roas" name="ROAS" stroke={GOLD} strokeWidth={2} dot />
@@ -590,7 +605,7 @@ export default function Dashboard() {
 
               <Card className="border-neutral-800 bg-neutral-900/60">
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">ROAS Checkpoints</CardTitle>
+                  <CardTitle className="flex items-center gap-2 text-white">ROAS Checkpoints</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="overflow-hidden rounded-xl border border-neutral-800">
